@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            background: #f2f2f2;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('/data');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                const list = document.getElementById('temperature-list');
+                list.innerHTML = '';
+                data.forEach(item => {
+                    const listItem = document.createElement('li');
+                    const date = new Date(item.timestamp);
+                    listItem.textContent = `${item.temperature}°C at ${date.toLocaleString()}`;
+                    list.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            }
+        }
+        setInterval(fetchData, 5000);  // Fetch data every 5 seconds
+        window.onload = fetchData;
+    </script>
+</head>
+<body>
+    <h1>Real-time Temperature Data</h1>
+    <ul id="temperature-list"></ul>
+</body>
+</html>
