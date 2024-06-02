@@ -1,53 +1,84 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temperature Data</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-        h1 {
-            text-align: center;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        li {
-            background: #f2f2f2;
-            margin: 5px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
-    </style>
-    <script>
-        async function fetchData() {
-            try {
-                const response = await fetch('/data');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                const list = document.getElementById('temperature-list');
-                list.innerHTML = '';
-                data.forEach(item => {
-                    const listItem = document.createElement('li');
-                    const date = new Date(item.timestamp);
-                    listItem.textContent = `${item.temperature}°C at ${date.toLocaleString()}`;
-                    list.appendChild(listItem);
-                });
-            } catch (error) {
-                console.error('Failed to fetch data:', error);
-            }
-        }
-        setInterval(fetchData, 5000);  // Fetch data every 5 seconds
-        window.onload = fetchData;
-    </script>
+    <title>IoT Sensor Control</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
+
 <body>
-    <h1>Real-time Temperature Data</h1>
-    <ul id="temperature-list"></ul>
+    <div class="container">
+        <h1 class="mt-5">IoT Sensor Control</h1>
+
+        <h2 class="mt-4">Temperature Data</h2>
+        <div id="temperature-data" class="p-3 bg-light border rounded"></div>
+
+        <h2 class="mt-4">Control Panel</h2>
+        <form class="mt-3">
+            <div class="form-group">
+                <label for="interval">Update Interval (seconds):</label>
+                <input type="number" class="form-control" id="interval" name="interval" min="1">
+                <button type="button" class="btn btn-primary mt-2"
+                    onclick="sendCommand('interval:' + document.getElementById('interval').value)">Set Interval</button>
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-success" onclick="sendCommand('start')">Start Sending Data</button>
+                <button type="button" class="btn btn-danger" onclick="sendCommand('stop')">Stop Sending Data</button>
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-info" onclick="sendCommand('aircon:on')">Turn On Air
+                    Conditioner</button>
+                <button type="button" class="btn btn-warning" onclick="sendCommand('aircon:off')">Turn Off Air
+                    Conditioner</button>
+            </div>
+            <div class="form-group">
+                <label for="aircon-min-temp">Aircon Min Temperature:</label>
+                <input type="number" class="form-control" id="aircon-min-temp" name="aircon-min-temp" step="0.1">
+                <label for="aircon-max-temp" class="mt-2">Aircon Max Temperature:</label>
+                <input type="number" class="form-control" id="aircon-max-temp" name="aircon-max-temp" step="0.1">
+                <button type="button" class="btn btn-secondary mt-2" onclick="setAirconTempRange()">Set Aircon
+                    Temperature Range</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function fetchData() {
+            $.getJSON("/data", function (data) {
+                $('#temperature-data').html(JSON.stringify(data));
+            });
+        }
+
+        function sendCommand(command) {
+            $.ajax({
+                url: '/control',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ command: command }),
+                success: function (response) {
+                    alert("Command sent successfully");
+                },
+                error: function (response) {
+                    alert("Failed to send command");
+                }
+            });
+        }
+
+        function setAirconTempRange() {
+            var minTemp = document.getElementById('aircon-min-temp').value;
+            var maxTemp = document.getElementById('aircon-max-temp').value;
+            var command = `aircon_temp_range:${minTemp},${maxTemp}`;
+            sendCommand(command);
+        }
+
+        $(document).ready(function () {
+            fetchData();
+            setInterval(fetchData, 5000); // Fetch data every 5 seconds
+        });
+    </script>
 </body>
+
 </html>
