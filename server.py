@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_mqtt import Mqtt
 import json
 import os
@@ -7,6 +7,7 @@ app = Flask(__name__)
 app.config['MQTT_BROKER_URL'] = 'localhost'
 app.config['MQTT_BROKER_PORT'] = 1883
 app.config['MQTT_TOPIC'] = 'sensor/temperature'
+app.config['MQTT_ACTUATOR_TOPIC'] = 'actuator/control'
 
 mqtt = Mqtt(app)
 
@@ -64,5 +65,20 @@ def get_data():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"error": "Failed to retrieve data"}), 500
+
+@app.route('/control', methods=['POST'])
+def control_actuator():
+    try:
+        command = request.json.get('command')
+        if command:
+            mqtt.publish(app.config['MQTT_ACTUATOR_TOPIC'], command)
+            print(f"Sent command to actuator: {command}")
+            return jsonify({"status": "success"}), 200
+        else:
+            return jsonify({"error": "No command provided"}), 400
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "Failed to send command"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
